@@ -30,9 +30,7 @@ function Pedra(level)
                 self.x = self.x - self.speed * (dt * 10) - self.lvl
                 self.circle_x = self.circle_x - self.speed * (dt * 10) - self.lvl
             end
-            
         end
-
     }
 end
 

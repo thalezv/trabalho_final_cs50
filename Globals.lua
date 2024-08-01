@@ -1,5 +1,10 @@
 local lunajson = require("lunajson")
 
+function _G.CalculateComplement(total, one)
+    local result = total % one
+    return result - one
+end
+
 function _G.calculateDistance(x1, y1, x2, y2)
     local dist_x = (x2 - x1) ^ 2
     local dist_y = (y2 - y1) ^ 2
@@ -8,9 +13,11 @@ end
 
 function _G.read(file_n)
     local file = io.open(file_n .. ".json", "r")
-    local data = file:read("*all")
-    file:close()
-
+    local data
+    if file ~= nil then
+        data = file:read("*all")
+        file:close()
+    end
     return lunajson.decode(data);
 end
 

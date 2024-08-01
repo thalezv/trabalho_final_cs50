@@ -32,7 +32,6 @@ function Lunna()
                 end
             end 
         end,
-
         kill = function (self)
             if self.x > -120 then
                 return true
@@ -40,7 +39,6 @@ function Lunna()
                 return false
             end
         end,
-
         draw = function (self, _frames)
             love.graphics.draw(self.sprite, self.quads[_frames], self.x, self.y)
         end

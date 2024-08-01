@@ -48,9 +48,9 @@ local game = {
     cheeses = {},
     cheese_space = 6,
     cheese_icon = love.graphics.newImage("Cheese_King/queijo_fatia.png"),
-    cheese_round = 0
+    cheese_round = 0,
+    background = BackGround(0)
 }     
-_G.background = BackGround()
 _G.audio = SFX()
 local buttons = {
     menu_state = {},
@@ -87,6 +87,7 @@ _G.enemy = {
         timer = 0.1
     }
 }
+local background_run = {}
 _G.stone = { }
 _G.coletavel = { }
 -- assistent functions
@@ -118,10 +119,14 @@ local function startNewGame()
     for l = #game.cheeses, 1, -1 do
         table.remove(game.cheeses, l)
     end
+    for a = #background_run, 1, -1 do
+        table.remove(background_run, a)
+    end
     game.level_change[1] = 50
     game.difficult = 1
     table.insert(stone, Pedra(game.difficult))
     table.insert(coletavel, Queijo(game.difficult))
+    table.insert(background_run, BackGround(0))
     changeGameState("running")
     game.cheese_space = 6
     player[1]:reset()
@@ -268,8 +273,16 @@ function love.update(dt)
                 end
             end
         end
-        for i = 1, #stone do 
-            stone[i]:move(dt, player.animation.jump)
+        for l = 1, #stone do 
+            stone[l]:move(dt, player.animation.jump)
+        end
+        for a = 1, #background_run do
+            local background_value = CalculateComplement(background_run[a].totalwidth, background_run[a].width)
+            if background_run[a].x > background_value and background_value + background_run[a].speed * (dt * 10) > background_run[a].x then
+                background_run[a].x = background_run[a].x + 1
+                table.insert(background_run, BackGround(love.graphics.getWidth()))
+            end
+            background_run[a]:move(dt)
         end
         if math.floor(game.points) > game.high_score and game.high_score then
             game.high_score = math.floor(game.points)
@@ -437,11 +450,12 @@ function love.update(dt)
 end
 
 function love.draw()
-    background:draw()
+    game.background:draw()
     love.graphics.printf("FPS:." .. love.timer.getFPS(), love.graphics.newFont(16), 10, 10, love.graphics.getWidth())
     if game.state["intro1"] then
         love.graphics.draw(intros.logo, love.graphics.getWidth() / 3, -100)
         love.graphics.printf(intros.title, love.graphics.newFont(50), love.graphics.getWidth() / 2.7, 250, love.graphics.getWidth())
+        mouse[1]:draw(mouse.mouse_x, mouse.mouse_y)
     end
     if game.state["intro2"] then
         love.graphics.setColor(0, 0, 0)
@@ -450,8 +464,12 @@ function love.draw()
         love.graphics.printf(intros.space, love.graphics.newFont(30), love.graphics.getWidth() / 3.8, 200, love.graphics.getWidth())
         love.graphics.printf(intros.pause, love.graphics.newFont(30), love.graphics.getWidth() / 1.8, 200, love.graphics.getWidth())
         love.graphics.setColor(1, 1, 1)
+        mouse[1]:draw(mouse.mouse_x, mouse.mouse_y)
     end
     if game.state["running"] then
+        for l = 1, #background_run do
+            background_run[l]:draw()
+        end
         love.graphics.printf(math.floor(game.points), love.graphics.newFont(24), 0, 10, love.graphics.getWidth(), "center")
         love.graphics.push()
         love.graphics.scale(0.5, 0.5)
@@ -461,8 +479,8 @@ function love.draw()
         for i = 1, #stone do 
             stone[i]:draw()
         end
-        for i = 1, #coletavel do 
-            coletavel[i]:draw()
+        for j = 1, #coletavel do 
+            coletavel[j]:draw()
         end
         player[1]:draw(player.animation.frame, player.animation.jump, game.state["paused"], player.animation.hit)
         enemy[1]:draw(enemy.animation_e.frame)
@@ -521,6 +539,9 @@ function love.draw()
         mouse[1]:draw(mouse.mouse_x, mouse.mouse_y)
     end
     if game.state["paused"] then
+        for l = 1, #background_run do
+            background_run[l]:draw()
+        end
         if game.high_score >= high_score_value then
             love.graphics.printf("High Score:. " .. game.high_score, love.graphics.newFont(24), 0, 10, love.graphics.getWidth(), "right")
         else

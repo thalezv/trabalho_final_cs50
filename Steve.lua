@@ -1,7 +1,7 @@
 function Steve()
     local _x = 180
     local _y = 200
-    local radius = 60
+    local _radius = 60
     local _sprite = love.graphics.newImage("Cheese_King/steve_sheet.png")
     local _sprite_width = 2681
     local _sprite_heigth = 285
@@ -22,31 +22,31 @@ function Steve()
     return {
         x = _x,
         y = _y,
-        radius = radius,
-        circle_x = _x + radius * 3.5,
-        circle_y =_y + radius * 2.7,
+        radius = _radius,
+        circle_x = _x + _radius * 3.5,
+        circle_y =_y + _radius * 2.7,
         sprite= _sprite,
         sprite2 = _sprite2,
         sprite3 = _sprite3,
         quads = _quads,
         quads2 = _quads2,
-        draw = function (self, _frames, move, status, hit)
+        draw = function (self, frames, move, status, hit)
             if move == true then
-                 if (_frames == 1 or _frames == 2) and status == false then
+                 if (frames == 1 or frames == 2) and status == false then
                     self.y = self.y - 10
                     self.circle_y = self.circle_y - 10
-                 elseif (_frames == 3  or _frames == 4) and status== false then
+                 elseif (frames == 3  or frames == 4) and status== false then
                     self.y = self.y + 10
                     self.circle_y = self.circle_y + 10
                 end
-                love.graphics.draw(self.sprite2, self.quads2[_frames], self.x, self.y)  
+                love.graphics.draw(self.sprite2, self.quads2[frames], self.x, self.y)  
                 love.graphics.circle("line", self.circle_x, self.circle_y, self.radius, 0)
             elseif move == false and hit == true then
                 self.y = 200
                 love.graphics.draw(self.sprite3, self.x, self.y)
             else
                 self.y = 200
-                love.graphics.draw(self.sprite, self.quads[_frames], self.x, self.y)
+                love.graphics.draw(self.sprite, self.quads[frames], self.x, self.y)
                 love.graphics.circle("line", self.circle_x, self.circle_y, self.radius, 0)
                 self.circle_y = self.y + self.radius * 2.7
             end

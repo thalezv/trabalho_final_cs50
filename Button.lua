@@ -11,7 +11,6 @@ function Button (text, func, func_param)
         button_y = 0,
         text_x = 0,
         text_y = 0,
-
         checkPressed = function(self, mouse_x, mouse_y, mouse_radius)
             if (mouse_x + (mouse_radius * 3) >= self.button_x) and (mouse_x - mouse_radius <= self.button_x + self.width) then
                 if (mouse_y + mouse_radius >= self.button_y) and (mouse_y - mouse_radius <= self.button_y + self.height) then
