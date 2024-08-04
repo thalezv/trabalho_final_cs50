@@ -1,3 +1,6 @@
+local love = require("love")
+
+--buttons and their default properties for all buttons
 function Button (text, func, func_param)
     return {
         width = 150,
@@ -11,7 +14,9 @@ function Button (text, func, func_param)
         button_y = 0,
         text_x = 0,
         text_y = 0,
+        --check if the mouse is on top of the button and if the button has a function to perform it
         checkPressed = function(self, mouse_x, mouse_y, mouse_radius)
+            --In this case, the button has a cheese skin, but if it didn't, it wouldn't be possible to use the calculateDistance()
             if (mouse_x + (mouse_radius * 3) >= self.button_x) and (mouse_x - mouse_radius <= self.button_x + self.width) then
                 if (mouse_y + mouse_radius >= self.button_y) and (mouse_y - mouse_radius <= self.button_y + self.height) then
                     if self.func_param then
@@ -22,6 +27,7 @@ function Button (text, func, func_param)
                 end
             end
         end,
+        --draws the buttons (a rectangle) at the location given outside and centers the button text in the middle of it
         draw = function(self, button_x, button_y, text_x, text_y)
             self.button_x = button_x or self.button_x
             self.button_y = button_y or self.button_y

@@ -1,6 +1,6 @@
 -- requires framework and anothers .lua archives assistents
 
- _G.love = require("love")
+local love = require("love")
 local Steve = require("Steve")
 local Lunna = require("Lunna")
 local Mouse = require("Mouse")
@@ -11,12 +11,13 @@ local Queijo = require("Queijo")
 local BackGround = require("BackGround")
 require("Globals")
 
--- characters
+-- characters and important variables
 local file_data = read("save")
 local high_score_value = file_data.pontuacao[1].high_score
 local nome = ""
 local time_init
 local time_space = 7.5
+--intros settings
 local intros = {
     title = "Cheese King",
     logo = love.graphics.newImage("Cheese_King/queijo_real.png"),
@@ -24,6 +25,7 @@ local intros = {
     space = "Press space to Jump",
     pause = "S to Pause"
 }
+--the game settings, + background.lua
 local game = {
     state = {
         intro1 = true,
@@ -51,7 +53,9 @@ local game = {
     cheese_round = 0,
     background = BackGround(0)
 }     
-_G.audio = SFX()
+--audio settings(sfx.lua)
+local audio = SFX()
+--list to store the buttons according to the game state (tab)
 local buttons = {
     menu_state = {},
     ended_state = {},
@@ -59,12 +63,14 @@ local buttons = {
     paused_state = {},
     configurations_state = {}
 }
-_G.mouse = {
+--mouse settings(mouse.lua)
+local mouse = {
     mouse_x = 0,
     mouse_y = 0,
     Mouse()
 }
-_G.player = {
+--player settings(steve.lua + average screen time of each frame (sprite))
+local player = {
     Steve(),
     animation = {
         idle = true,
@@ -77,7 +83,8 @@ _G.player = {
         hit_timer = 0.1
     }
 }
-_G.enemy = {
+--enemy settings(lunna.lua + average screen time of each frame (sprite))
+local enemy = {
     Lunna(),
     callback = 0,
     animation_e = {
@@ -87,10 +94,12 @@ _G.enemy = {
         timer = 0.1
     }
 }
+--lists to store various scenes, stones (obstacles) and cheese (collectibles), background.lua, pedra.lua, queijo.lua
 local background_run = {}
-_G.stone = { }
-_G.coletavel = { }
+local stone = { }
+local coletavel = { }
 -- assistent functions
+--change the game state(tabs)
 local function changeGameState(state)
     game.state["intro1"] = state == "intro1"
     game.state["intro2"] = state == "intro2"
@@ -101,12 +110,16 @@ local function changeGameState(state)
     game.state["pontuacao"] = state =="pontuacao"
     game.state["configurations"] = state == "configurations"
 end
+--change game music volume
 local function changeVolume(volume)
     audio:volume(volume)
 end
+--turn on or off the music
 local function changeAudio()
     audio:PandS_BGM()
 end
+--resets stones, cheese, enemy and player position as well as other important data such as current run score, while preparing for a new run
+--[[]]
 local function startNewGame()
     nome = ""
     enemy.callback = 0
@@ -153,6 +166,7 @@ local function startNewGame()
         table.insert(game.cheeses, game.randomcheese + (game.cheese_space * (i - 1)))
     end
 end
+--happens between finishing a run with a valid score to enter the top three (new or better than an old one), through table.sort organizes it in descending order and writes it to save.json
 local function save()
     table.insert(file_data.pontuacao, {name = nome, high_score = game.high_score})
     table.sort(file_data.pontuacao, function(a, b) return a.high_score > b.high_score end)
@@ -164,10 +178,12 @@ local function save()
     file_data = read("save")
     changeGameState("ended")
 end
+--The intro starts when you open the game, but if the user wants to see it again, this function on the credits button in the menu allows you to see the intro again
 local function credit()
     time_init = love.timer.getTime()
     changeGameState("intro1")
 end
+--standard function made available by 'love' to check mouse actions
 function love.mousepressed(x, y, button, istouch, presses)
     if not game.state["running"] then
         if button == 1 then
@@ -198,6 +214,7 @@ end
 
 -- load,update and draw love
 function love.load()
+    --loads the first timer, makes the mouse invisible and loads all buttons by placing them in their correct state list
     time_init = love.timer.getTime()
     love.mouse.setVisible(false)
     buttons.menu_state.play_game = Button("play game", startNewGame, nil)
@@ -279,10 +296,11 @@ function love.update(dt)
         for a = 1, #background_run do
             local background_value = CalculateComplement(background_run[a].totalwidth, background_run[a].width)
             if background_run[a].x > background_value and background_value + background_run[a].speed * (dt * 10) > background_run[a].x then
-                background_run[a].x = background_run[a].x + 1
-                table.insert(background_run, BackGround(love.graphics.getWidth()))
+                table.insert(background_run, BackGround(love.graphics.getWidth() - 1))
             end
-            background_run[a]:move(dt)
+            if not player.animation.hit then 
+                background_run[a]:move(dt)
+            end
         end
         if math.floor(game.points) > game.high_score and game.high_score then
             game.high_score = math.floor(game.points)
@@ -450,13 +468,16 @@ function love.update(dt)
 end
 
 function love.draw()
+    --draws the default background and the fps on all game tabs
     game.background:draw()
     love.graphics.printf("FPS:." .. love.timer.getFPS(), love.graphics.newFont(16), 10, 10, love.graphics.getWidth())
+    --in the first intro draw the game logo and name
     if game.state["intro1"] then
         love.graphics.draw(intros.logo, love.graphics.getWidth() / 3, -100)
         love.graphics.printf(intros.title, love.graphics.newFont(50), love.graphics.getWidth() / 2.7, 250, love.graphics.getWidth())
         mouse[1]:draw(mouse.mouse_x, mouse.mouse_y)
     end
+    --in the second intro it shows the name of the creator and explains the game keys
     if game.state["intro2"] then
         love.graphics.setColor(0, 0, 0)
         love.graphics.printf("creator:     " .. intros.creator, love.graphics.newFont(30), love.graphics.getWidth() / 3.5, 50, love.graphics.getWidth())
@@ -466,6 +487,7 @@ function love.draw()
         love.graphics.setColor(1, 1, 1)
         mouse[1]:draw(mouse.mouse_x, mouse.mouse_y)
     end
+    --When you are in the 'run' tab, it draws the list of moving scenes, the player, the enemy, the obstacles and collectibles, as well as the score and hides the mouse
     if game.state["running"] then
         for l = 1, #background_run do
             background_run[l]:draw()
@@ -485,6 +507,7 @@ function love.draw()
         player[1]:draw(player.animation.frame, player.animation.jump, game.state["paused"], player.animation.hit)
         enemy[1]:draw(enemy.animation_e.frame)
     end
+    --draws the menu buttons, the total amount of cheese in addition to the mouse
     if game.state["menu"] then    
         buttons.menu_state.play_game:draw(20, 40, 45, 15)
         buttons.menu_state.settings:draw(20, 100, 45, 15)
@@ -497,6 +520,7 @@ function love.draw()
         love.graphics.printf(":" .. " " .. file_data.queijo, love.graphics.newFont(16), love.graphics.getWidth() - 120, 20, love.graphics.getWidth())
         mouse[1]:draw(mouse.mouse_x, mouse.mouse_y)
     end
+    --draws the game settings buttons and mouse
     if game.state["configurations"] then
         buttons.configurations_state.play_Stop_audio:draw(20, 40, 45, 15)
         buttons.configurations_state.audio:draw(20, 100, 45, 15)
@@ -508,6 +532,8 @@ function love.draw()
         buttons.configurations_state.back:draw(20, 160, 45, 15)
         mouse[1]:draw(mouse.mouse_x, mouse.mouse_y)
     end
+    --in the score tab and an end of game between the character's death and the end game, as there was a change in the highscore, then draw everything from the 'run' tab + 
+    --buttons from the score tab, along with the score and the current first highscore
     if game.state["pontuacao"] then
         enemy[1]:draw(enemy.animation_e.frame)
         for i = 1, #stone do 
@@ -523,6 +549,7 @@ function love.draw()
         love.graphics.printf("name: " .. file_data.pontuacao[1].name .. "  ".. "highscore: " .. high_score_value, love.graphics.newFont(24), 0, love.graphics.getHeight() / 1.5, love.graphics.getWidth(), "center") 
         mouse[1]:draw(mouse.mouse_x, mouse.mouse_y)
     end
+    --end of game tab, presents the three best highscores of the machine, total cheeses and end tab buttons
     if game.state["ended"] then
         buttons.ended_state.replay_game:draw(love.graphics.getWidth() / 2.3, 20, 45, 15)
         buttons.ended_state.menu:draw(love.graphics.getWidth() / 2.3, 80, 45, 15)
@@ -538,6 +565,7 @@ function love.draw()
         love.graphics.printf(":" .. " " .. file_data.queijo, love.graphics.newFont(16), love.graphics.getWidth() - 120, 20, love.graphics.getWidth())
         mouse[1]:draw(mouse.mouse_x, mouse.mouse_y)
     end
+    --in the pause tab it basically draws the same as in run tab + pause tab and highscore buttons in addition to run score
     if game.state["paused"] then
         for l = 1, #background_run do
             background_run[l]:draw()
