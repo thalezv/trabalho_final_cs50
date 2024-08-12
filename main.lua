@@ -243,7 +243,20 @@ function love.load()
 end
 
 function love.update(dt)
+    --gets the position of the mouse tip
     mouse.mouse_x, mouse.mouse_y = love.mouse.getPosition()
+    --when the keys are released, if space when the game is running the player jumps, if backspace when saving a highscore erases a letter from the player's name
+    function love.keyreleased(key)
+        if key == "space" and player.animation.jump == false and player.animation.hit == false and game.state["running"] then
+            player.animation.frame = 1
+            player.animation.idle = true
+            player.animation.jump = true
+         end
+         if key == "backspace" and game.state["pontuacao"] then
+            nome = string.sub(nome, 1, -2)
+         end
+    end
+    --while in intro1, where the game starts it checks the current time, if the current time - love.load() time or the data in credit() results in 7.5 seconds it changes to intro2
     if game.state["intro1"] then
         local time_count = love.timer.getTime()
         if time_count - time_init >= time_space then
@@ -251,59 +264,75 @@ function love.update(dt)
             changeGameState("intro2")
         end
     end
+    --while in intro2, it checks the current time, if the current time - time when it changed from intro1 to intro2 results in 7.5 seconds, it switches to the menu
     if game.state["intro2"] then
         local time_count = love.timer.getTime()
         if time_count - time_init >= time_space then
             changeGameState("menu")
         end
     end
+    --when in the running state, it starts with activating both the character and the enemy and moving
     if game.state["running"] then
         player.animation.idle = false
         enemy.animation_e.idle = false
+        --score increases by an equivalent to the standard 'dt' time of love
         game.points = game.points + (dt * 8)
+        --If the enemy kills the player, they will have 4 action options
         if enemy[1]:kill() then
+            --If you have less than 3 highscores, or your highscore is higher than the first place, go to the score to add a new highscore
             if game.high_score > high_score_value or #file_data.pontuacao < 3 then
                 changeGameState("pontuacao")
-            elseif file_data.pontuacao[2] ~= nil then
-                if game.high_score > file_data.pontuacao[2].high_score then
-                    changeGameState("pontuacao")
-                end
-            elseif file_data.pontuacao[3] ~= nil then
-                if game.high_score > file_data.pontuacao[3].high_score then
-                    changeGameState("pontuacao")
-                end
+            --if the highscore is higher than the second place go to score to add a new highscore 
+            elseif game.high_score > file_data.pontuacao[2].high_score then               
+                changeGameState("pontuacao")
+            --if the highscore is higher than the third place go to score to add a new highscore
+            elseif game.high_score > file_data.pontuacao[3].high_score then
+                changeGameState("pontuacao")
+            --Finally, if you have three highscores and the current one is not higher than none, go straight to the end of the game
             else
                 changeGameState("ended")
                 file_data.queijo = file_data.queijo + game.cheese_round
                 write("save", file_data)
                 file_data = read("save")
             end
+        --and if the enemy didn't kill the character he still follows the rules of moving
         else
             enemy[1]:move(player.animation.hit, dt, enemy.callback)
         end
+        --for each slice of cheese in the collectible list, they move
         for i = 1, #coletavel do 
             coletavel[i]:move(dt, player.animation.jump)
             for j = 1, #stone do
+                --but if any slice of cheese is in the same position as an obstacle, the cheese will be ejected onto it
                 if calculateDistance(stone[j].circle_x, stone[j].circle_y, coletavel[i].circle_x, coletavel[i].circle_y) <= coletavel[i].radius * 2 then
                     coletavel[i].y = coletavel[i].y - 10
                     coletavel[i].circle_y = coletavel[i].circle_y - 10
                 end
             end
         end
+        --for each stone in the obstacle list, they move
         for l = 1, #stone do 
             stone[l]:move(dt, player.animation.jump)
         end
+        --for each background in your list
         for a = 1, #background_run do
+            --saves the off-screen value of the background
             local background_value = CalculateComplement(background_run[a].totalwidth, background_run[a].width)
+            --If this value becomes zero, when moving to the left, it adds another background to the end of the screen
             if background_run[a].x > background_value and background_value + background_run[a].speed * (dt * 10) > background_run[a].x then
                 table.insert(background_run, BackGround(love.graphics.getWidth() - 1))
             end
+            --As long as the player is not hit, the scene moves
             if not player.animation.hit then 
                 background_run[a]:move(dt)
             end
         end
+        --every dt saves the highscore rating, and serves to control some actions per unit
         if math.floor(game.points) > game.high_score and game.high_score then
             game.high_score = math.floor(game.points)
+            --every 200 points and before 1000 points, the game's difficulty (speed) increases, regulating the speed of already existing and undeleted objects,
+            --in addition to decreasing the distance from the first guideline by 5
+            -- -25 in total
             if math.floor(game.points) % game.level_change[2] == 0 and math.floor(game.points) > 0 and math.floor(game.points) <= game.level_change[4] then
                 game.level_change[1] = game.level_change[1] - 5
                 game.difficult = game.difficult + 1
@@ -315,25 +344,34 @@ function love.update(dt)
                     stone[j].speed = stone[j].speed + 20
                     stone[j].lvl = stone[j].lvl + 1
                 end
+                for l = 1, #coletavel do
+                    coletavel[l].speed = coletavel[l]. speed + 20
+                    coletavel[l].lvl = coletavel[l].lvl + 1
+                end
             end
-            if math.floor(game.points) % game.level_change[3] == 0 and math.floor(game.points) > game.level_change[4] then
-                game.level_change[1] = game.level_change[1] - 1
-                game.difficult = game.difficult + 1    
-                for j = 1, #stone do
-                    stone[j].speed = stone[j].speed + 20
-                    stone[j].lvl = stone[j].lvl + 1
-                end     
-            end
-            if math.floor(game.points) % game.level_change[4] == 0 and math.floor(game.points) >= game.level_change[5] and game.level_change[1] >= 11 then
-                game.level_change[1] = game.level_change[1] - 1
-                game.difficult = game.difficult + 1
-                if game.difficult < 8 then
+            --every 500 after 1000 and before 3000, the difficulty (speed) increases and the first criterion decreases by 1
+            -- - 6 in total
+            if math.floor(game.points) % game.level_change[3] == 0 and math.floor(game.points) > game.level_change[4] and math.floor(game.points) < game.level_change[5] then
+                game.level_change[1] = game.level_change[1] - 2
+                game.difficult = game.difficult + 1 
+                if game.difficult < 8 then   
                     for j = 1, #stone do
                         stone[j].speed = stone[j].speed + 20
                         stone[j].lvl = stone[j].lvl + 1
-                    end
+                    end    
+                    for l = 1, #coletavel do
+                        coletavel[l].speed = coletavel[l]. speed + 20
+                        coletavel[l].lvl = coletavel[l].lvl + 1
+                    end 
                 end
             end
+            --every 1000 after 3000, the first criterion decreases by 1, already at maximum speed
+            -- -8 and stop
+            if math.floor(game.points) % game.level_change[4] == 0 and math.floor(game.points) >= game.level_change[5] and game.level_change[1] >= 11 then
+                game.level_change[1] = game.level_change[1] - 1
+            end
+            --When the score reaches the random score chosen for the stone, it is added to the list of obstacles, and a new random score is made for the next
+            --first condition, initially between 50 there is a stone and it decreases according to the conditions
             if math.floor(game.points) == game.randomrock  and math.floor(game.points) > 0 then
                 game.randominit_r = math.floor(game.points)
                 game.randomend_r = game.randominit_r + game.level_change[1]
@@ -343,6 +381,8 @@ function love.update(dt)
                 end
                 table.insert(stone, Pedra(game.difficult))
             end
+            --When the score reaches the random score chosen for the cheese slice, a new random score is made for the next
+            --second condition, between 200
             if math.floor(game.points) == game.randomcheese  and math.floor(game.points) > 0 then
                 game.randominit_c = math.floor(game.points)
                 game.randomend_c = game.randominit_c + game.level_change[2]
@@ -354,6 +394,8 @@ function love.update(dt)
                     table.insert(game.cheeses, game.randomcheese + (game.cheese_space * (i - 1)))
                 end
             end
+            --as there are five slices of cheese in a row, the first function creates the first and the other four at a distance from the first,
+            --while the second function adds them all at the right time to the list of collectibles
             for i = 1, #game.cheeses do
                 if math.floor(game.points) == game.cheeses[i] then
                     table.remove(game.cheeses, game.cheeses[i])
@@ -361,19 +403,11 @@ function love.update(dt)
                 end
             end
         end
+        --when the s key is pressed it changes the game to paused status
         if love.keyboard.isDown("s") then
             changeGameState("paused")
         end
-        function love.keyreleased(key)
-            if key == "space" and player.animation.jump == false and player.animation.hit == false and game.state["running"] then
-                player.animation.frame = 1
-                player.animation.idle = true
-                player.animation.jump = true
-             end
-             if key == "backspace" and game.state["pontuacao"] then
-                nome = string.sub(nome, 1, -2)
-             end
-        end
+        --calculates whether there was an impact between the player's hitbox and an obstacle, allowing the enemy to advance and only retreat when an obstacle is avoided
         for i = #stone, 1, -1 do 
             if calculateDistance(player[1].circle_x, player[1].circle_y, stone[i].circle_x, stone[i].circle_y) <= stone[i].radius * 2 then
                 table.remove(stone, i)
@@ -387,6 +421,7 @@ function love.update(dt)
                 table.remove(stone, i)
             end
         end
+        --calculates whether there was an impact between the player's hitbox and any collectible, increasing the amount of cheese in the run
         for i = #coletavel, 1, -1 do 
             if calculateDistance(player[1].circle_x, player[1].circle_y, coletavel[i].circle_x, coletavel[i].circle_y) <= coletavel[i].radius * 2 and not player.animation.hit then
                 table.remove(coletavel, i)
@@ -395,6 +430,7 @@ function love.update(dt)
                 table.remove(coletavel, i)
             end
         end
+        --timer for each frame when player is reached, in this case only 1 with time equal to 8
          if player.animation.hit then
             player.animation.hit_timer = player.animation.hit_timer + dt
             if player.animation.hit_timer > 0.4 then
@@ -408,9 +444,9 @@ function love.update(dt)
                 end
             end
          end
-
+         --timer for each frame when the player is jumping, in case 4
         if player.animation.jump then
-        player.animation.jump_timer = player.animation.jump_timer + dt
+            player.animation.jump_timer = player.animation.jump_timer + dt
             if player.animation.jump_timer > 0.4 then
                 player.animation.jump_timer = 0.1
                 player.animation.frame = player.animation.frame + 1
@@ -421,9 +457,32 @@ function love.update(dt)
                 end
             end
         end
+        --if the character is authorized, it moves by switching between frames
+        if not player.animation.idle then
+            player.animation.timer = player.animation.timer + dt
+            if player.animation.timer > 0.4 then
+                player.animation.timer = 0.1
+                player.animation.frame = player.animation.frame + 1
+                if player.animation.frame > player.animation.max_frames then
+                    player.animation.frame = 4
+                end
+            end
+        end
+        --if the enemy is authorized, it moves by switching between frames
+        if not enemy.animation_e.idle then
+            enemy.animation_e.timer = enemy.animation_e.timer + dt
+            if enemy.animation_e.timer > 0.25 then
+                enemy.animation_e.timer = 0.1
+                enemy.animation_e.frame = enemy.animation_e.frame + 1
+                if enemy.animation_e.frame > enemy.animation_e.max_frames then
+                    enemy.animation_e.frame = 1
+                end
+            end
+        end
+    --When the game is in the state of saving the highscore, it will ask for the user name which must be less than 6 and the confirm button will only have function if it is greater than 0
     elseif game.state["pontuacao"] then
         function love.textinput(t)
-            if #nome < 6 then
+            if #nome < 6 and game.state["pontuacao"] then
                 nome = nome .. t
             end
         end
@@ -433,37 +492,19 @@ function love.update(dt)
         else
             buttons.pontuacao_state.confirm = Button("confirm", nil, nil)
         end
-    else
+    --when the game is in the settings state, update the button so if the music is playing, stop it and if it is stopped, play it
+    elseif game.state["configurations"] then
         if not audio:playing_BGM() then
             buttons.configurations_state.play_Stop_audio = Button("Play", changeAudio, nil)
         else
             buttons.configurations_state.play_Stop_audio = Button("Stop", changeAudio, nil)
         end
+    --when the game is in the paused or ended or save score state, stop updating the score and stop the characters
+    elseif game.state["paused"] or game.state["ended"] or game.state["pontuacao"] then
         game.points = game.points
         game.high_score = game.high_score
         player.animation.idle = true
         enemy.animation_e.idle = true
-
-    end
-    if not player.animation.idle then
-        player.animation.timer = player.animation.timer + dt
-        if player.animation.timer > 0.4 then
-            player.animation.timer = 0.1
-            player.animation.frame = player.animation.frame + 1
-            if player.animation.frame > player.animation.max_frames then
-                player.animation.frame = 4
-            end
-        end
-    end
-    if not enemy.animation_e.idle then
-        enemy.animation_e.timer = enemy.animation_e.timer + dt
-        if enemy.animation_e.timer > 0.25 then
-            enemy.animation_e.timer = 0.1
-            enemy.animation_e.frame = enemy.animation_e.frame + 1
-            if enemy.animation_e.frame > enemy.animation_e.max_frames then
-                enemy.animation_e.frame = 1
-            end
-        end
     end
 end
 

@@ -22,7 +22,8 @@ function Lunna()
         --movement of the enemy towards the player, depending on whether he was hit
         move = function(self, hit, dt, cb)
             --kill the player
-            if self.x == - 120 then
+            if self.x >= - 120 then
+                self.x = -120
                 self.x = self.x
             else
                 --while the player is walking
@@ -36,7 +37,7 @@ function Lunna()
                     end
                 else
                     --if the player was hit, lunna advances at a speed of three advances = total value (kill)
-                    if self.x <= -120 then
+                    if self.x < -120 then
                         self.x = self.x + dt * 200
                     end
                 end
@@ -44,7 +45,7 @@ function Lunna()
         end,
         --the enemy does not have a hitbox as the condition for it to hit the player is only to reach -120
         kill = function (self)
-            if self.x >= -120 then
+            if self.x == -120 then
                 return true
             else
                 return false
