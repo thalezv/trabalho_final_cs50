@@ -367,7 +367,7 @@ function love.update(dt)
             end
             --every 1000 after 3000, the first criterion decreases by 1, already at maximum speed
             -- -8 and stop
-            if math.floor(game.points) % game.level_change[4] == 0 and math.floor(game.points) >= game.level_change[5] and game.level_change[1] >= 11 then
+            if math.floor(game.points) % game.level_change[4] == 0 and math.floor(game.points) >= game.level_change[5] and game.level_change[1] > 12 then
                 game.level_change[1] = game.level_change[1] - 1
             end
             --When the score reaches the random score chosen for the stone, it is added to the list of obstacles, and a new random score is made for the next
