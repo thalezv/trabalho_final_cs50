@@ -13,6 +13,7 @@ require("Globals")
 
 -- characters and important variables
 local file_data = read("save")
+table.sort(file_data.pontuacao, function(a, b) return a.high_score > b.high_score end)
 local high_score_value = file_data.pontuacao[1].high_score
 local nome = ""
 local time_init
